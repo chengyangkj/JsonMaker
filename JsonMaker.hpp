@@ -1,12 +1,3 @@
-/*
- * @Author: chengyangkj
- * @Date: 2021-12-20 18:33:52
- * @LastEditors: chengyang cyjiang@robovision.cn
- * @LastEditTime: 2022-09-27 18:29:14
- * @FilePath: /hontai/inc/JsonMaker/JsonMaker.hpp
- * @Description: file content
- */
-
 #pragma once
 #include <deque>
 #include <forward_list>
