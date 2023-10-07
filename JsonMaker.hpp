@@ -1,17 +1,17 @@
 #pragma once
+#include "rapidjson/document.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 #include <deque>
 #include <forward_list>
 #include <iostream>
 #include <list>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
-#include <memory>
-
-#include "rapidjson/document.h"
-#include "rapidjson/stringbuffer.h"
-#include "rapidjson/writer.h"
 
 namespace JsonMaker {
 
@@ -25,45 +25,45 @@ namespace JsonMaker {
  *      JSON_MAKER_REGISTER(A, B)
  * };
  ******************************************************/
-#define JSON_MAKER_REGISTER(...)                                           \
-  std::map<std::string, std::string> __DefaultValues;                      \
-  bool RegisterJsonToObject(JsonMaker::JsonHandlerPrivate &handle,         \
-                            rapidjson::Value &jsonValue,                   \
-                            std::vector<std::string> &names) {             \
-    std::vector<std::string> standardNames =                               \
-        handle.GetMembersNames(#__VA_ARGS__);                              \
-    if (names.size() <= standardNames.size()) {                            \
-      for (int i = names.size(); i < (int)standardNames.size(); i++)       \
-        names.push_back(standardNames[i]);                                 \
-    }                                                                      \
-    return handle.SetMembers(names, 0, jsonValue, __DefaultValues,         \
-                             __VA_ARGS__);                                 \
-  }                                                                        \
-  bool RegisterObjectToJson(JsonMaker::JsonHandlerPrivate &handle,         \
-                            rapidjson::Value &jsonValue,                   \
-                            rapidjson::Document::AllocatorType &allocator, \
-                            std::vector<std::string> &names) {             \
-    std::vector<std::string> standardNames =                               \
-        handle.GetMembersNames(#__VA_ARGS__);                              \
-    if (names.size() <= standardNames.size()) {                            \
-      for (int i = names.size(); i < (int)standardNames.size(); i++)       \
-        names.push_back(standardNames[i]);                                 \
-    }                                                                      \
-    return handle.GetMembers(names, 0, jsonValue, allocator, __VA_ARGS__); \
+#define JSON_MAKER_REGISTER(...)                                               \
+  std::map<std::string, std::string> __DefaultValues;                          \
+  bool RegisterJsonToObject(JsonMaker::JsonHandlerPrivate &handle,             \
+                            rapidjson::Value &jsonValue,                       \
+                            std::vector<std::string> &names) {                 \
+    std::vector<std::string> standardNames =                                   \
+        handle.GetMembersNames(#__VA_ARGS__);                                  \
+    if (names.size() <= standardNames.size()) {                                \
+      for (int i = names.size(); i < (int)standardNames.size(); i++)           \
+        names.push_back(standardNames[i]);                                     \
+    }                                                                          \
+    return handle.SetMembers(names, 0, jsonValue, __DefaultValues,             \
+                             __VA_ARGS__);                                     \
+  }                                                                            \
+  bool RegisterObjectToJson(JsonMaker::JsonHandlerPrivate &handle,             \
+                            rapidjson::Value &jsonValue,                       \
+                            rapidjson::Document::AllocatorType &allocator,     \
+                            std::vector<std::string> &names) {                 \
+    std::vector<std::string> standardNames =                                   \
+        handle.GetMembersNames(#__VA_ARGS__);                                  \
+    if (names.size() <= standardNames.size()) {                                \
+      for (int i = names.size(); i < (int)standardNames.size(); i++)           \
+        names.push_back(standardNames[i]);                                     \
+    }                                                                          \
+    return handle.GetMembers(names, 0, jsonValue, allocator, __VA_ARGS__);     \
   }
 
-#define JSON_MAKE_SERIALIZATION()                                \
-  std::string GetStrFromObject() {                               \
-    std::string strResult = "";                                  \
-    JsonMaker::Maker::ObjectToJson((*this), strResult);          \
-    return strResult;                                            \
-  }                                                              \
-  bool SetStrToObject(std::string strData) {                     \
-    bool ret = JsonMaker::Maker::JsonToObject((*this), strData); \
-    if (strData.length() <= 0 && !ret) {                         \
-      return false;                                              \
-    }                                                            \
-    return true;                                                 \
+#define JSON_MAKE_SERIALIZATION()                                              \
+  std::string GetStrFromObject() {                                             \
+    std::string strResult = "";                                                \
+    JsonMaker::Maker::ObjectToJson((*this), strResult);                        \
+    return strResult;                                                          \
+  }                                                                            \
+  bool SetStrToObject(std::string strData) {                                   \
+    bool ret = JsonMaker::Maker::JsonToObject((*this), strData);               \
+    if (strData.length() <= 0 && !ret) {                                       \
+      return false;                                                            \
+    }                                                                          \
+    return true;                                                               \
   }
 
 /******************************************************
@@ -79,78 +79,78 @@ namespace JsonMaker {
  *0表示初始没有给大小
  * };
  ******************************************************/
-#define JSON_MAKER_ARRAY(...)                                               \
-  std::map<std::string, int> __ArrayItem;                                   \
-  std::map<uintptr_t, int> __ArrayAdress;                                   \
-  std::map<uintptr_t, std::pair<std::string, int>> __ArrayInfo;             \
-  std::vector<std::pair<std::string, int>> __Arrays;                        \
-  bool InitArrayInfo(JsonMaker::JsonHandlerPrivate &handle) {               \
-    std::vector<std::string> standardNames =                                \
-        handle.GetMembersNames(#__VA_ARGS__);                               \
-    if (standardNames.size() % 2 != 0) {                                    \
-      return false;                                                         \
-    }                                                                       \
-                                                                            \
-    std::vector<int> nums;                                                  \
-    std::vector<uintptr_t> ptrs;                                            \
-    bool ret = handle.GetArrayMembersSize(nums, ptrs, __VA_ARGS__);         \
-    if (!ret) {                                                             \
-      return false;                                                         \
-    }                                                                       \
-                                                                            \
-    if (nums.size() * 2 != standardNames.size()) {                          \
-      return false;                                                         \
-    }                                                                       \
-    for (int i, j = 0; i < standardNames.size() && j < nums.size();         \
-         i = i + 2, j++) {                                                  \
-      std::pair<std::string, int> pairTemp;                                 \
-      pairTemp.first = standardNames[i];                                    \
-      pairTemp.second = nums[j];                                            \
-      __ArrayItem[standardNames[i]] = nums[j];                              \
-      auto it = __ArrayAdress.find(ptrs[j]);                                \
-      if (it != __ArrayAdress.end()) {                                      \
-        __ArrayItem[standardNames[i]] = __ArrayAdress[ptrs[j]];             \
-        pairTemp.second = __ArrayAdress[ptrs[j]];                           \
-      }                                                                     \
-      __ArrayInfo[ptrs[j]] = pairTemp;                                      \
-      __Arrays.push_back(pairTemp);                                         \
-    }                                                                       \
-    return handle.SaveArrayInfo(__ArrayItem);                               \
-  }                                                                         \
-  bool RegisterArrayToJson(JsonMaker::JsonHandlerPrivate &handle,           \
-                           rapidjson::Value &jsonValue,                     \
-                           rapidjson::Document::AllocatorType &allocator) { \
-    if (!InitArrayInfo(handle)) {                                           \
-      return false;                                                         \
-    }                                                                       \
-    return handle.GetArrayInfo(__ArrayInfo, jsonValue, allocator,           \
-                               __VA_ARGS__);                                \
-  }                                                                         \
-  bool SetArrayParamsSize(void *ptr, int count) {                           \
-    uintptr_t uPtr = reinterpret_cast<uintptr_t>(ptr);                      \
-    __ArrayAdress[uPtr] = count;                                            \
-    return true;                                                            \
-  }                                                                         \
-                                                                            \
-  int GetArrayParamsSize(std::string paramName, std::string strData) {      \
-    int size = -1;                                                          \
-    rapidjson::Document root;                                               \
-    root.Parse(strData.c_str());                                            \
-    if (root.IsNull()) {                                                    \
-      return size;                                                          \
-    }                                                                       \
-    rapidjson::Value &value = root;                                         \
-    if (value.HasMember(paramName.c_str())) {                               \
-      size = value[paramName.c_str()].GetArray().Size();                    \
-    }                                                                       \
-    return size;                                                            \
-  }                                                                         \
-  bool RegisterJsonToArray(JsonMaker::JsonHandlerPrivate &handle,           \
-                           rapidjson::Value &jsonValue) {                   \
-    if (!InitArrayInfo(handle)) {                                           \
-      return false;                                                         \
-    }                                                                       \
-    return handle.SetArrayInfo(__Arrays, 0, jsonValue, __VA_ARGS__);        \
+#define JSON_MAKER_ARRAY(...)                                                  \
+  std::map<std::string, int> __ArrayItem;                                      \
+  std::map<uintptr_t, int> __ArrayAdress;                                      \
+  std::map<uintptr_t, std::pair<std::string, int>> __ArrayInfo;                \
+  std::vector<std::pair<std::string, int>> __Arrays;                           \
+  bool InitArrayInfo(JsonMaker::JsonHandlerPrivate &handle) {                  \
+    std::vector<std::string> standardNames =                                   \
+        handle.GetMembersNames(#__VA_ARGS__);                                  \
+    if (standardNames.size() % 2 != 0) {                                       \
+      return false;                                                            \
+    }                                                                          \
+                                                                               \
+    std::vector<int> nums;                                                     \
+    std::vector<uintptr_t> ptrs;                                               \
+    bool ret = handle.GetArrayMembersSize(nums, ptrs, __VA_ARGS__);            \
+    if (!ret) {                                                                \
+      return false;                                                            \
+    }                                                                          \
+                                                                               \
+    if (nums.size() * 2 != standardNames.size()) {                             \
+      return false;                                                            \
+    }                                                                          \
+    for (int i, j = 0; i < standardNames.size() && j < nums.size();            \
+         i = i + 2, j++) {                                                     \
+      std::pair<std::string, int> pairTemp;                                    \
+      pairTemp.first = standardNames[i];                                       \
+      pairTemp.second = nums[j];                                               \
+      __ArrayItem[standardNames[i]] = nums[j];                                 \
+      auto it = __ArrayAdress.find(ptrs[j]);                                   \
+      if (it != __ArrayAdress.end()) {                                         \
+        __ArrayItem[standardNames[i]] = __ArrayAdress[ptrs[j]];                \
+        pairTemp.second = __ArrayAdress[ptrs[j]];                              \
+      }                                                                        \
+      __ArrayInfo[ptrs[j]] = pairTemp;                                         \
+      __Arrays.push_back(pairTemp);                                            \
+    }                                                                          \
+    return handle.SaveArrayInfo(__ArrayItem);                                  \
+  }                                                                            \
+  bool RegisterArrayToJson(JsonMaker::JsonHandlerPrivate &handle,              \
+                           rapidjson::Value &jsonValue,                        \
+                           rapidjson::Document::AllocatorType &allocator) {    \
+    if (!InitArrayInfo(handle)) {                                              \
+      return false;                                                            \
+    }                                                                          \
+    return handle.GetArrayInfo(__ArrayInfo, jsonValue, allocator,              \
+                               __VA_ARGS__);                                   \
+  }                                                                            \
+  bool SetArrayParamsSize(void *ptr, int count) {                              \
+    uintptr_t uPtr = reinterpret_cast<uintptr_t>(ptr);                         \
+    __ArrayAdress[uPtr] = count;                                               \
+    return true;                                                               \
+  }                                                                            \
+                                                                               \
+  int GetArrayParamsSize(std::string paramName, std::string strData) {         \
+    int size = -1;                                                             \
+    rapidjson::Document root;                                                  \
+    root.Parse(strData.c_str());                                               \
+    if (root.IsNull()) {                                                       \
+      return size;                                                             \
+    }                                                                          \
+    rapidjson::Value &value = root;                                            \
+    if (value.HasMember(paramName.c_str())) {                                  \
+      size = value[paramName.c_str()].GetArray().Size();                       \
+    }                                                                          \
+    return size;                                                               \
+  }                                                                            \
+  bool RegisterJsonToArray(JsonMaker::JsonHandlerPrivate &handle,              \
+                           rapidjson::Value &jsonValue) {                      \
+    if (!InitArrayInfo(handle)) {                                              \
+      return false;                                                            \
+    }                                                                          \
+    return handle.SetArrayInfo(__Arrays, 0, jsonValue, __VA_ARGS__);           \
   }
 
 /******************************************************
@@ -164,10 +164,10 @@ namespace JsonMaker {
  *      JSON_MAKER_RENAME("a", "b")
  * };
  ******************************************************/
-#define JSON_MAKER_RENAME(...)                    \
-  std::vector<std::string> RegisterRenameMembers( \
-      JsonMaker::JsonHandlerPrivate &handle) {    \
-    return handle.GetMembersNames(#__VA_ARGS__);  \
+#define JSON_MAKER_RENAME(...)                                                 \
+  std::vector<std::string> RegisterRenameMembers(                              \
+      JsonMaker::JsonHandlerPrivate &handle) {                                 \
+    return handle.GetMembersNames(#__VA_ARGS__);                               \
   }
 
 /******************************************************
@@ -186,15 +186,15 @@ namespace JsonMaker {
  *      JSON_MAKER_REGISTER_BASE((Base*)this)
  * };
  ******************************************************/
-#define JSON_MAKER_REGISTER_BASE(...)                                     \
-  bool RegisterBaseJsonToObject(JsonMaker::JsonHandlerPrivate &handle,    \
-                                rapidjson::Value &jsonValue) {            \
-    return handle.SetBase(jsonValue, __VA_ARGS__);                        \
-  }                                                                       \
-  bool RegisterBaseObjectToJson(                                          \
-      JsonMaker::JsonHandlerPrivate &handle, rapidjson::Value &jsonValue, \
-      rapidjson::Document::AllocatorType &allocator) {                    \
-    return handle.GetBase(jsonValue, allocator, __VA_ARGS__);             \
+#define JSON_MAKER_REGISTER_BASE(...)                                          \
+  bool RegisterBaseJsonToObject(JsonMaker::JsonHandlerPrivate &handle,         \
+                                rapidjson::Value &jsonValue) {                 \
+    return handle.SetBase(jsonValue, __VA_ARGS__);                             \
+  }                                                                            \
+  bool RegisterBaseObjectToJson(                                               \
+      JsonMaker::JsonHandlerPrivate &handle, rapidjson::Value &jsonValue,      \
+      rapidjson::Document::AllocatorType &allocator) {                         \
+    return handle.GetBase(jsonValue, allocator, __VA_ARGS__);                  \
   }
 
 /******************************************************
@@ -208,39 +208,32 @@ namespace JsonMaker {
  *      JSON_MAKER_REGISTER_DEFAULT(age=18)
  * };
  ******************************************************/
-#define JSON_MAKER_REGISTER_DEFAULT(...)                              \
-  void RegisterDefaultValues(JsonMaker::JsonHandlerPrivate &handle) { \
-    __DefaultValues = handle.GetMembersValueMap(#__VA_ARGS__);        \
+#define JSON_MAKER_REGISTER_DEFAULT(...)                                       \
+  void RegisterDefaultValues(JsonMaker::JsonHandlerPrivate &handle) {          \
+    __DefaultValues = handle.GetMembersValueMap(#__VA_ARGS__);                 \
   }
 
 class JsonHandlerPrivate {
- public:
+public:
   /******************************************************
    *
    * enable_if
    *
    ******************************************************/
-  template <bool, class TYPE = void>
-  struct enable_if {};
+  template <bool, class TYPE = void> struct enable_if {};
 
-  template <class TYPE>
-  struct enable_if<true, TYPE> {
-    typedef TYPE type;
-  };
+  template <class TYPE> struct enable_if<true, TYPE> { typedef TYPE type; };
 
   /******************************************************
    *
    * 判断是否为指针
    *
    ******************************************************/
-  template <typename T>
-  bool IsPtr(T *v) {
-    return true;
-  }
+  template <typename T> bool IsPtr(T *v) { return true; }
 
   bool IsPtr(...) { return false; }
 
-  std::set<std::string> m_arrayMark;  //记录原始数组的标识
+  std::set<std::string> m_arrayMark; //记录原始数组的标识
   bool SaveArrayInfo(std::map<std::string, int> &mapInfo) {
     for (auto it = mapInfo.begin(); it != mapInfo.end(); ++it) {
       m_arrayMark.insert(it->first);
@@ -249,7 +242,7 @@ class JsonHandlerPrivate {
     return true;
   }
 
- public:
+public:
   /******************************************************
    *
    * Check Interface
@@ -258,63 +251,49 @@ class JsonHandlerPrivate {
    *go to the correct conver function.
    *
    ******************************************************/
-  template <typename T>
-  struct HasConverFunction {
+  template <typename T> struct HasConverFunction {
     template <typename TT>
     static char func(decltype(&TT::RegisterJsonToObject));
 
-    template <typename TT>
-    static int func(...);
+    template <typename TT> static int func(...);
 
     const static bool has = (sizeof(func<T>(NULL)) == sizeof(char));
   };
 
-  template <typename T>
-  struct HasRenameFunction {
+  template <typename T> struct HasRenameFunction {
     template <typename TT>
     static char func(decltype(&TT::RegisterRenameMembers));
-    template <typename TT>
-    static int func(...);
+    template <typename TT> static int func(...);
     const static bool has = (sizeof(func<T>(NULL)) == sizeof(char));
   };
 
-  template <typename T>
-  struct HasBaseConverFunction {
+  template <typename T> struct HasBaseConverFunction {
     template <typename TT>
     static char func(decltype(&TT::RegisterBaseJsonToObject));
-    template <typename TT>
-    static int func(...);
+    template <typename TT> static int func(...);
     const static bool has = (sizeof(func<T>(NULL)) == sizeof(char));
   };
 
-  template <typename T>
-  struct HasDefaultValueFunction {
+  template <typename T> struct HasDefaultValueFunction {
     template <typename TT>
     static char func(decltype(&TT::RegisterDefaultValues));
-    template <typename TT>
-    static int func(...);
+    template <typename TT> static int func(...);
     const static bool has = (sizeof(func<T>(NULL)) == sizeof(char));
   };
 
-  template <typename T>
-  struct HasArrayToJsonRegisterFunction {
-    template <typename TT>
-    static char func(decltype(&TT::RegisterArrayToJson));
-    template <typename TT>
-    static int func(...);
+  template <typename T> struct HasArrayToJsonRegisterFunction {
+    template <typename TT> static char func(decltype(&TT::RegisterArrayToJson));
+    template <typename TT> static int func(...);
     const static bool has = (sizeof(func<T>(NULL)) == sizeof(char));
   };
 
-  template <typename T>
-  struct HasJsonToArrayRegisterFunction {
-    template <typename TT>
-    static char func(decltype(&TT::RegisterArrayToJson));
-    template <typename TT>
-    static int func(...);
+  template <typename T> struct HasJsonToArrayRegisterFunction {
+    template <typename TT> static char func(decltype(&TT::RegisterArrayToJson));
+    template <typename TT> static int func(...);
     const static bool has = (sizeof(func<T>(NULL)) == sizeof(char));
   };
 
- public:
+public:
   /******************************************************
    *
    * Interface of JsonToObject\ObjectToJson
@@ -323,7 +302,8 @@ class JsonHandlerPrivate {
   template <typename T,
             typename enable_if<HasConverFunction<T>::has, int>::type = 0>
   bool JsonToObject(T &obj, rapidjson::Value &jsonValue) {
-    if (!BaseConverJsonToObject(obj, jsonValue)) return false;
+    if (!BaseConverJsonToObject(obj, jsonValue))
+      return false;
 
     LoadDefaultValuesMap(obj);
     LoadJsonToArrayInfo(obj, jsonValue);
@@ -347,7 +327,8 @@ class JsonHandlerPrivate {
             typename enable_if<std::is_enum<T>::value, int>::type = 0>
   bool HandleSpecialObjectToJson(T &obj, rapidjson::Value &jsonValue) {
     int64_t ivalue;
-    if (!JsonToObject(ivalue, jsonValue)) return false;
+    if (!JsonToObject(ivalue, jsonValue))
+      return false;
 
     obj = static_cast<T>(ivalue);
     return true;
@@ -356,7 +337,8 @@ class JsonHandlerPrivate {
   template <typename T,
             typename enable_if<!std::is_enum<T>::value, int>::type = 0>
   bool HandleSpecialObjectToJson(T &obj, rapidjson::Value &jsonValue) {
-    if (!BaseConverJsonToObject(obj, jsonValue)) return false;
+    if (!BaseConverJsonToObject(obj, jsonValue))
+      return false;
     LoadDefaultValuesMap(obj);
     LoadJsonToArrayInfo(obj, jsonValue);
     return true;
@@ -373,8 +355,10 @@ class JsonHandlerPrivate {
             typename enable_if<HasConverFunction<T>::has, int>::type = 0>
   bool ObjectToJson(T &obj, rapidjson::Value &jsonValue,
                     rapidjson::Document::AllocatorType &allocator) {
-    if (jsonValue.IsNull()) jsonValue.SetObject();
-    if (!BaseConverObjectToJson(obj, jsonValue, allocator)) return false;
+    if (jsonValue.IsNull())
+      jsonValue.SetObject();
+    if (!BaseConverObjectToJson(obj, jsonValue, allocator))
+      return false;
     std::vector<std::string> names = LoadRenameArray(obj);
     LoadArrayInfo(obj, jsonValue, allocator);
     return obj.RegisterObjectToJson(*this, jsonValue, allocator, names);
@@ -384,8 +368,10 @@ class JsonHandlerPrivate {
             typename enable_if<!HasConverFunction<T>::has, int>::type = 0>
   bool ObjectToJson(T &obj, rapidjson::Value &jsonValue,
                     rapidjson::Document::AllocatorType &allocator) {
-    if (jsonValue.IsNull()) jsonValue.SetObject();
-    if (!BaseConverObjectToJson(obj, jsonValue, allocator)) return false;
+    if (jsonValue.IsNull())
+      jsonValue.SetObject();
+    if (!BaseConverObjectToJson(obj, jsonValue, allocator))
+      return false;
     bool ret = LoadArrayInfo(obj, jsonValue, allocator);
     ret = HandleSpecialObjectToJson(obj, jsonValue, allocator);
     // if (std::is_enum<T>::value) {
@@ -402,18 +388,18 @@ class JsonHandlerPrivate {
 
   template <typename T,
             typename enable_if<std::is_enum<T>::value, int>::type = 0>
-  bool HandleSpecialObjectToJson(
-      T &obj, rapidjson::Value &jsonValue,
-      rapidjson::Document::AllocatorType &allocator) {
+  bool
+  HandleSpecialObjectToJson(T &obj, rapidjson::Value &jsonValue,
+                            rapidjson::Document::AllocatorType &allocator) {
     int64_t ivalue = static_cast<int64_t>(obj);
     return ObjectToJson(ivalue, jsonValue, allocator);
   }
 
   template <typename T,
             typename enable_if<!std::is_enum<T>::value, int>::type = 0>
-  bool HandleSpecialObjectToJson(
-      T &obj, rapidjson::Value &jsonValue,
-      rapidjson::Document::AllocatorType &allocator) {
+  bool
+  HandleSpecialObjectToJson(T &obj, rapidjson::Value &jsonValue,
+                            rapidjson::Document::AllocatorType &allocator) {
     return true;
   }
 
@@ -525,7 +511,7 @@ class JsonHandlerPrivate {
     return false;
   }
 
- public:
+public:
   /******************************************************
    *
    * Tool function
@@ -542,7 +528,8 @@ class JsonHandlerPrivate {
       pos1 = pos2 + 1;
       pos2 = str.find(sep, pos1);
     }
-    if (pos1 != str.length()) array.push_back(str.substr(pos1));
+    if (pos1 != str.length())
+      array.push_back(str.substr(pos1));
 
     return array;
   }
@@ -571,19 +558,19 @@ class JsonHandlerPrivate {
    */
   static std::string GetJsonValueTypeName(rapidjson::Value &jsonValue) {
     switch (jsonValue.GetType()) {
-      case rapidjson::Type::kArrayType:
-        return "array";
-      case rapidjson::Type::kFalseType:
-      case rapidjson::Type::kTrueType:
-        return "bool";
-      case rapidjson::Type::kObjectType:
-        return "object";
-      case rapidjson::Type::kStringType:
-        return "string";
-      case rapidjson::Type::kNumberType:
-        return "number";
-      default:
-        return "string";
+    case rapidjson::Type::kArrayType:
+      return "array";
+    case rapidjson::Type::kFalseType:
+    case rapidjson::Type::kTrueType:
+      return "bool";
+    case rapidjson::Type::kObjectType:
+      return "object";
+    case rapidjson::Type::kStringType:
+      return "string";
+    case rapidjson::Type::kNumberType:
+      return "number";
+    default:
+      return "string";
     }
   }
 
@@ -596,14 +583,16 @@ class JsonHandlerPrivate {
     return ret;
   }
 
-  static std::string FindStringFromMap(
-      std::string name, std::map<std::string, std::string> &stringMap) {
+  static std::string
+  FindStringFromMap(std::string name,
+                    std::map<std::string, std::string> &stringMap) {
     std::map<std::string, std::string>::iterator iter = stringMap.find(name);
-    if (iter == stringMap.end()) return "";
+    if (iter == stringMap.end())
+      return "";
     return iter->second;
   }
 
- public:
+public:
   /******************************************************
    *
    * Set class/struct members value
@@ -637,7 +626,8 @@ class JsonHandlerPrivate {
     }
 
     for (int i = 0; i < size; i++) {
-      if (!JsonToObject(arg[i], jsonValue[strKey.c_str()][i])) return false;
+      if (!JsonToObject(arg[i], jsonValue[strKey.c_str()][i]))
+        return false;
     }
 
     return true;
@@ -676,7 +666,8 @@ class JsonHandlerPrivate {
 
     for (int i = 0; i < size; i++) {
       rapidjson::Value item;
-      if (!ObjectToJson(arg[i], item, allocator)) return false;
+      if (!ObjectToJson(arg[i], item, allocator))
+        return false;
 
       array.PushBack(item, allocator);
     }
@@ -724,17 +715,19 @@ class JsonHandlerPrivate {
     return array;
   }
 
-  std::map<std::string, std::string> GetMembersValueMap(
-      const std::string valueStr) {
+  std::map<std::string, std::string>
+  GetMembersValueMap(const std::string valueStr) {
     std::vector<std::string> array = StringSplit(valueStr);
     std::map<std::string, std::string> ret;
     for (int i = 0; i < array.size(); i++) {
       std::vector<std::string> keyValue = StringSplit(array[i], '=');
-      if (keyValue.size() != 2) continue;
+      if (keyValue.size() != 2)
+        continue;
 
       std::string key = StringTrim(keyValue[0]);
       std::string value = StringTrim(keyValue[1]);
-      if (ret.find(key) != ret.end()) continue;
+      if (ret.find(key) != ret.end())
+        continue;
       ret.insert(std::pair<std::string, std::string>(key, value));
     }
     return ret;
@@ -745,7 +738,8 @@ class JsonHandlerPrivate {
                   rapidjson::Value &jsonValue,
                   std::map<std::string, std::string> defaultValues, TYPE &arg,
                   TYPES &...args) {
-    if (!SetMembers(names, index, jsonValue, defaultValues, arg)) return false;
+    if (!SetMembers(names, index, jsonValue, defaultValues, arg))
+      return false;
 
     return SetMembers(names, ++index, jsonValue, defaultValues, args...);
   }
@@ -758,12 +752,15 @@ class JsonHandlerPrivate {
       //为原始数组数据，这里不做处理
       return true;
     }
-    if (jsonValue.IsNull()) return true;
+    if (jsonValue.IsNull())
+      return true;
     const char *key = names[index].c_str();
-    if (!jsonValue.IsObject()) return false;
+    if (!jsonValue.IsObject())
+      return false;
     if (!jsonValue.HasMember(key)) {
       std::string defaultV = FindStringFromMap(names[index], defaultValues);
-      if (!defaultV.empty()) StringToObject(arg, defaultV);
+      if (!defaultV.empty())
+        StringToObject(arg, defaultV);
       return true;
     }
 
@@ -784,7 +781,8 @@ class JsonHandlerPrivate {
                   rapidjson::Value &jsonValue,
                   rapidjson::Document::AllocatorType &allocator, TYPE &arg,
                   TYPES &...args) {
-    if (!GetMembers(names, index, jsonValue, allocator, arg)) return false;
+    if (!GetMembers(names, index, jsonValue, allocator, arg))
+      return false;
     return GetMembers(names, ++index, jsonValue, allocator, args...);
   }
 
@@ -813,7 +811,7 @@ class JsonHandlerPrivate {
     return true;
   }
 
- public:
+public:
   /******************************************************
    *
    * Set base class value
@@ -821,7 +819,8 @@ class JsonHandlerPrivate {
    ******************************************************/
   template <typename TYPE, typename... TYPES>
   bool SetBase(rapidjson::Value &jsonValue, TYPE *arg, TYPES *...args) {
-    if (!SetBase(jsonValue, arg)) return false;
+    if (!SetBase(jsonValue, arg))
+      return false;
     return SetBase(jsonValue, args...);
   }
 
@@ -839,7 +838,8 @@ class JsonHandlerPrivate {
   bool GetBase(rapidjson::Value &jsonValue,
                rapidjson::Document::AllocatorType &allocator, TYPE *arg,
                TYPES *...args) {
-    if (!GetBase(jsonValue, allocator, arg)) return false;
+    if (!GetBase(jsonValue, allocator, arg))
+      return false;
     return GetBase(jsonValue, allocator, args...);
   }
 
@@ -849,15 +849,14 @@ class JsonHandlerPrivate {
     return ObjectToJson(*arg, jsonValue, allocator);
   }
 
- public:
+public:
   /******************************************************
    * Conver base-type : string to base-type
    * Contain: int\uint、int64_t\uint64_t、bool、float
    *          double、string
    *
    ******************************************************/
-  template <typename TYPE>
-  void StringToObject(TYPE &obj, std::string &value) {
+  template <typename TYPE> void StringToObject(TYPE &obj, std::string &value) {
     return;
   }
 
@@ -894,7 +893,7 @@ class JsonHandlerPrivate {
     obj = atof(value.c_str());
   }
 
- public:
+public:
   /******************************************************
    * Conver base-type : Json string to base-type
    * Contain: int\uint、int64_t\uint64_t、bool、float
@@ -1009,7 +1008,8 @@ class JsonHandlerPrivate {
 
   bool JsonToObject(std::string &obj, rapidjson::Value &jsonValue) {
     obj = "";
-    if (jsonValue.IsNull()) return true;
+    if (jsonValue.IsNull())
+      return true;
     // object or number conver to string
     else if (jsonValue.IsObject() || jsonValue.IsNumber())
       obj = GetStringFromJsonValue(jsonValue);
@@ -1034,7 +1034,8 @@ class JsonHandlerPrivate {
     auto array = jsonValue.GetArray();
     for (int i = 0; i < array.Size(); i++) {
       TYPE item;
-      if (!JsonToObject(item, array[i])) return false;
+      if (!JsonToObject(item, array[i]))
+        return false;
       obj.push_back(item);
     }
     return true;
@@ -1051,7 +1052,8 @@ class JsonHandlerPrivate {
     auto array = jsonValue.GetArray();
     for (int i = 0; i < array.Size(); i++) {
       TYPE item;
-      if (!JsonToObject(item, array[i])) return false;
+      if (!JsonToObject(item, array[i]))
+        return false;
       obj.push_front(item);
     }
     obj.reverse();
@@ -1069,7 +1071,8 @@ class JsonHandlerPrivate {
     auto array = jsonValue.GetArray();
     for (int i = 0; i < array.Size(); i++) {
       TYPE item;
-      if (!JsonToObject(item, array[i])) return false;
+      if (!JsonToObject(item, array[i]))
+        return false;
       obj.push_back(item);
     }
     return true;
@@ -1087,8 +1090,47 @@ class JsonHandlerPrivate {
     auto array = jsonValue.GetArray();
     for (int i = 0; i < array.Size(); i++) {
       TYPE item;
-      if (!JsonToObject(item, array[i])) return false;
+      if (!JsonToObject(item, array[i]))
+        return false;
       obj.push_back(item);
+    }
+    return true;
+  }
+  template <typename TYPE>
+  bool JsonToObject(std::set<TYPE> &obj, rapidjson::Value &jsonValue) {
+    obj.clear();
+    if (!jsonValue.IsArray()) {
+      m_message = "json-value is " + GetJsonValueTypeName(jsonValue) +
+                  " but object is std::set<TYPE>.";
+      return false;
+    }
+
+    auto array = jsonValue.GetArray();
+    for (int i = 0; i < array.Size(); i++) {
+      TYPE item;
+      if (!JsonToObject(item, array[i]))
+        return false;
+      obj.insert(item);
+    }
+    return true;
+  }
+
+  template <typename TYPE>
+  bool JsonToObject(std::unordered_set<TYPE> &obj,
+                    rapidjson::Value &jsonValue) {
+    obj.clear();
+    if (!jsonValue.IsArray()) {
+      m_message = "json-value is " + GetJsonValueTypeName(jsonValue) +
+                  " but object is std::unordered_set<TYPE>.";
+      return false;
+    }
+
+    auto array = jsonValue.GetArray();
+    for (int i = 0; i < array.Size(); i++) {
+      TYPE item;
+      if (!JsonToObject(item, array[i]))
+        return false;
+      obj.insert(item);
     }
     return true;
   }
@@ -1109,7 +1151,8 @@ class JsonHandlerPrivate {
       auto &value = jsonValue[key];
 
       TYPE item;
-      if (!JsonToObject(item, value)) return false;
+      if (!JsonToObject(item, value))
+        return false;
 
       obj.insert(std::pair<std::string, TYPE>(key, item));
     }
@@ -1135,7 +1178,7 @@ class JsonHandlerPrivate {
     return true;
   }
 
- public:
+public:
   /******************************************************
    * Conver base-type : base-type to json string
    * Contain: int\uint、int64_t\uint64_t、bool、float
@@ -1215,7 +1258,8 @@ class JsonHandlerPrivate {
     rapidjson::Value array(rapidjson::Type::kArrayType);
     for (int i = 0; i < obj.size(); i++) {
       rapidjson::Value item;
-      if (!ObjectToJson(obj[i], item, allocator)) return false;
+      if (!ObjectToJson(obj[i], item, allocator))
+        return false;
 
       array.PushBack(item, allocator);
     }
@@ -1230,7 +1274,8 @@ class JsonHandlerPrivate {
     rapidjson::Value array(rapidjson::Type::kArrayType);
     for (auto i = obj.begin(); i != obj.end(); i++) {
       rapidjson::Value item;
-      if (!ObjectToJson(*i, item, allocator)) return false;
+      if (!ObjectToJson(*i, item, allocator))
+        return false;
 
       array.PushBack(item, allocator);
     }
@@ -1238,13 +1283,37 @@ class JsonHandlerPrivate {
     jsonValue = array;
     return true;
   }
+
+  template <typename TYPE>
+  bool ObjectToJson(std::set<TYPE> &obj, rapidjson::Value &jsonValue,
+                    rapidjson::Document::AllocatorType &allocator) {
+    // As std::set use keys to index, std::set iterators are const iterators,
+    // dereferencing will produce const value which means set<string> will
+    // produce TYPE = const string C++ template specialization treat (string &)
+    // and (const string &) as different types of parameters thus, const string
+    // will fall into the default ObjectToJson, leading to static_cast error To
+    // avoid this error, we convert set to vector, which produce non-const
+    // iterators
+    std::vector<TYPE> vec(obj.begin(), obj.end());
+    return ObjectToJson(vec, jsonValue, allocator);
+  }
+
+  template <typename TYPE>
+  bool ObjectToJson(std::unordered_set<TYPE> &obj, rapidjson::Value &jsonValue,
+                    rapidjson::Document::AllocatorType &allocator) {
+    // Same as std::set, convert unordered_set to vector to avoid compilation
+    // error
+    std::vector<TYPE> vec(obj.begin(), obj.end());
+    return ObjectToJson(vec, jsonValue, allocator);
+  }
   template <typename TYPE>
   bool ObjectToJson(std::forward_list<TYPE> &obj, rapidjson::Value &jsonValue,
                     rapidjson::Document::AllocatorType &allocator) {
     rapidjson::Value array(rapidjson::Type::kArrayType);
     for (auto i = obj.begin(); i != obj.end(); i++) {
       rapidjson::Value item;
-      if (!ObjectToJson(*i, item, allocator)) return false;
+      if (!ObjectToJson(*i, item, allocator))
+        return false;
 
       array.PushBack(item, allocator);
     }
@@ -1258,7 +1327,8 @@ class JsonHandlerPrivate {
     rapidjson::Value array(rapidjson::Type::kArrayType);
     for (auto i = obj.begin(); i != obj.end(); i++) {
       rapidjson::Value item;
-      if (!ObjectToJson(*i, item, allocator)) return false;
+      if (!ObjectToJson(*i, item, allocator))
+        return false;
 
       array.PushBack(item, allocator);
     }
@@ -1277,7 +1347,8 @@ class JsonHandlerPrivate {
       TYPE value = iter->second;
 
       rapidjson::Value jsonitem;
-      if (!ObjectToJson(value, jsonitem, allocator)) return false;
+      if (!ObjectToJson(value, jsonitem, allocator))
+        return false;
 
       rapidjson::Value jsonkey;
       jsonkey.SetString(key.c_str(), key.length(), allocator);
@@ -1295,17 +1366,18 @@ class JsonHandlerPrivate {
       return true;
     }
 
-    if (!ObjectToJson(*obj.get(), jsonValue, allocator)) return false;
+    if (!ObjectToJson(*obj.get(), jsonValue, allocator))
+      return false;
 
     return true;
   }
 
- public:
+public:
   std::string m_message;
 };
 
 class Maker {
- public:
+public:
   /**
    * @brief conver json string to class | struct
    * @param obj : class or struct
@@ -1321,7 +1393,8 @@ class Maker {
     rapidjson::Document root;
     root.Parse(jsonStr.c_str());
     if (root.IsNull()) {
-      if (message) *message = "Json string can't parse.";
+      if (message)
+        *message = "Json string can't parse.";
       return false;
     }
 
@@ -1330,11 +1403,13 @@ class Maker {
     rapidjson::Value &value = root;
     for (int i = 0; i < (int)keys.size(); i++) {
       const char *find = keys[i].c_str();
-      if (!path.empty()) path += "->";
+      if (!path.empty())
+        path += "->";
       path += keys[i];
 
       if (!value.IsObject() || !value.HasMember(find)) {
-        if (message) *message = "Can't parse the path [" + path + "].";
+        if (message)
+          *message = "Can't parse the path [" + path + "].";
         return false;
       }
       value = value[find];
@@ -1343,7 +1418,8 @@ class Maker {
     // Conver
     JsonHandlerPrivate handle;
     if (!handle.JsonToObject(obj, value)) {
-      if (message) *message = handle.m_message;
+      if (message)
+        *message = handle.m_message;
       return false;
     }
     return true;
@@ -1361,7 +1437,8 @@ class Maker {
                const std::vector<std::string> keys = {},
                std::string *message = NULL) {
     T obj;
-    if (JsonToObject(obj, jsonStr, keys, message)) return obj;
+    if (JsonToObject(obj, jsonStr, keys, message))
+      return obj;
 
     return defaultT;
   }
@@ -1382,7 +1459,8 @@ class Maker {
     // Conver
     JsonHandlerPrivate handle;
     if (!handle.ObjectToJson(obj, root, allocator)) {
-      if (message) *message = handle.m_message;
+      if (message)
+        *message = handle.m_message;
       return false;
     }
 
@@ -1391,4 +1469,4 @@ class Maker {
   }
 };
 
-}  // namespace JsonMaker
+} // namespace JsonMaker
